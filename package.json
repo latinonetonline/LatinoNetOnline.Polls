@@ -1,0 +1,36 @@
+{
+  "name": "latinonetonline.polls",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"tsc --watch\" \"nodemon dist/index.js\"",
+    "build": "tsc",
+    "migrate": "node-pg-migrate",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/latinonetonline/LatinoNetOnline.Polls.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/latinonetonline/LatinoNetOnline.Polls/issues"
+  },
+  "homepage": "https://github.com/latinonetonline/LatinoNetOnline.Polls#readme",
+  "devDependencies": {
+    "@types/express": "^4.17.6",
+    "@types/pg": "^7.14.3",
+    "@types/uuid": "^8.0.0",
+    "concurrently": "^5.2.0",
+    "nodemon": "^2.0.4",
+    "typescript": "^3.9.3"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "node-pg-migrate": "^5.0.1",
+    "pg": "^8.2.1",
+    "uuid": "^8.1.0"
+  }
+}
