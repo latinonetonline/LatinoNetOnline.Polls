@@ -10,5 +10,5 @@ const app = express_1.default();
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: false }));
 app.use(index_1.default);
-app.listen(4000);
-console.log(`http://localhost:4000`);
+app.listen(process.env.PORT || 3000);
+console.log(`http://localhost:${process.env.PORT || 3000}`);
