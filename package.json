@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "concurrently \"tsc --watch\" \"nodemon dist/index.js\"",
     "build": "tsc",
-    "migrate": "node-pg-migrate",
+    "migrate": "node-pg-migrate up",
     "postinstall": "npm run build && npm run migrate",
     "start": "npm run serve",
     "serve": "node dist/server.js",
