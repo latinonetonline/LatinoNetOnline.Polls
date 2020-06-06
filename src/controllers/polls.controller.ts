@@ -16,7 +16,13 @@ export const getPolls = async (req: Request, res: Response): Promise<Response<Po
 
 export const getPollById = async (req: Request, res: Response): Promise<Response<Poll[]>> => {
     const response: QueryResult<Poll> = await pool.query<Poll, Poll[]>(`SELECT * FROM \"public\".\"Polls\" WHERE \"PollId\" = '${req.params.id}'`);
-    return res.status(200).json(response.rows)
+    
+    if (response.rows.length) {
+        return res.status(200).json(response.rows);
+    }
+    else {
+        return res.status(404).json();
+    }
 }
 
 export const getByEvent = async (req: Request, res: Response): Promise<Response<Poll[]>> => {
