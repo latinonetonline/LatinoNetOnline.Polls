@@ -22,7 +22,12 @@ exports.getPolls = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
 });
 exports.getPollById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const response = yield database_1.pool.query(`SELECT * FROM \"public\".\"Polls\" WHERE \"PollId\" = '${req.params.id}'`);
-    return res.status(200).json(response.rows);
+    if (response.rows.length) {
+        return res.status(200).json(response.rows);
+    }
+    else {
+        return res.status(404).json();
+    }
 });
 exports.getByEvent = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const response = yield database_1.pool.query(`SELECT * FROM \"public\".\"Polls\" WHERE \"EventId\" = '${req.params.eventId}'`);
