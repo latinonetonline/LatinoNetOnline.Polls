@@ -19,7 +19,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PG_PORT = exports.PG_DATABASE = exports.PG_PASSWORD = exports.PG_USER = exports.PG_HOST = void 0;
+exports.AUTH0_AUDIENCE = exports.AUTH0_ISSUER = exports.PG_PORT = exports.PG_DATABASE = exports.PG_PASSWORD = exports.PG_USER = exports.PG_HOST = void 0;
 const dotenv = __importStar(require("dotenv"));
 dotenv.config();
 let path;
@@ -39,3 +39,5 @@ exports.PG_USER = process.env.PG_USER;
 exports.PG_PASSWORD = process.env.PG_PASSWORD;
 exports.PG_DATABASE = process.env.PG_DATABASE;
 exports.PG_PORT = parseInt(process.env.PG_PORT || '0');
+exports.AUTH0_ISSUER = process.env.AUTH0_ISSUER;
+exports.AUTH0_AUDIENCE = process.env.AUTH0_AUDIENCE;
