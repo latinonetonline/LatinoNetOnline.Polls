@@ -1,115 +1,193 @@
 import { Request, Response } from "express";
-import { QueryResult } from "pg";
-import { pool } from '../database';
 import { Poll } from "../models/Poll";
-import { Answer } from "../models/Answer";
 import { CreatePollRequest } from "../models/CreatePollRequest";
-import { OptionVotes } from "../models/OptionVotes";
 import { PollOptionsResults } from "../models/PollOptionsResults";
 import { Option } from "../models/Option";
 import { v4 as uuidv4 } from 'uuid';
+import { PollService } from '../services/polls.service';
+import { OptionService } from '../services/options.service';
+import { AnswerService } from "../services/answers.service";
+import { OperationResponse } from "../models/OperationResponse";
+import { OperationResponseResult } from "../models/OperationResponseResult";
+
+const pollService = new PollService();
+const optionService = new OptionService();
+const answerService = new AnswerService();
 
 export const getPolls = async (req: Request, res: Response): Promise<Response<Poll[]>> => {
-    const response: QueryResult<Poll> = await pool.query<Poll, Poll[]>("SELECT * FROM \"public\".\"Polls\"");
-    return res.status(200).json(response.rows)
+    try {
+
+        const polls = await pollService.getAll();
+        return res.status(200).json(new OperationResponseResult(polls));
+
+    } catch (error) {
+        return res.status(500).json(new OperationResponse(false, error));
+    }
+
 }
 
 export const getPollById = async (req: Request, res: Response): Promise<Response<Poll[]>> => {
-    const response: QueryResult<Poll> = await pool.query<Poll, Poll[]>(`SELECT * FROM \"public\".\"Polls\" WHERE \"PollId\" = '${req.params.id}'`);
-    
-    if (response.rows.length) {
-        return res.status(200).json(response.rows);
-    }
-    else {
-        return res.status(404).json();
+    try {
+
+        const id: string = req.params.id;
+        if (!id) {
+            return res.status(400).json(new OperationResponse(false, "Id Invalido"));
+        }
+
+        const poll = await pollService.getById(id);
+        if (poll) {
+            return res.status(200).json(new OperationResponseResult(poll));
+        }
+        else {
+            return res.status(404).json(new OperationResponse(false, "No existe un Poll con ese Id"));
+        }
+
+    } catch (error) {
+        return res.status(500).json(new OperationResponse(false, error));
     }
 }
 
 export const getByEvent = async (req: Request, res: Response): Promise<Response<Poll[]>> => {
-    const response: QueryResult<Poll> = await pool.query<Poll, Poll[]>(`SELECT * FROM \"public\".\"Polls\" WHERE \"EventId\" = '${req.params.eventId}'`);
-    return res.status(200).json(response.rows)
+    try {
+
+        const eventId: string = req.params.eventId;
+        const polls = await pollService.getByEventId(eventId);
+        return res.status(200).json(new OperationResponseResult(polls));
+
+    } catch (error) {
+        return res.status(500).json(new OperationResponse(false, error));
+    }
 }
 
 export const getResult = async (req: Request, res: Response): Promise<Response> => {
-    const pollId = req.params.id;
-    const responsePoll: QueryResult<Poll> = await pool.query<Poll, Poll[]>(`SELECT * FROM \"public\".\"Polls\" WHERE \"PollId\" = '${pollId}'`);
-    const responseAnswer: QueryResult<OptionVotes> = await pool.query<OptionVotes, OptionVotes[]>(`SELECT \"public\".\"Options\".*, (select  Count(*) from \"public\".\"Answers\" WHERE \"public\".\"Options\".\"OptionId\" = \"public\".\"Answers\".\"OptionId\") AS Votes
-    FROM \"public\".\"Options\" 
-    WHERE \"public\".\"Options\".\"PollId\" = '${pollId}';`);
+    try {
 
-    const result = new PollOptionsResults();
-    result.options = responseAnswer.rows;
-    result.poll = responsePoll.rows[0];
+        const pollId = req.params.id;
+        if (!pollId) {
+            return res.status(400).json(new OperationResponse(false, "pollId Invalido"));
+        }
 
-    return res.status(200).json(result)
+        const poll = await pollService.getById(pollId);
+
+        if (poll) {
+            const options = await optionService.getOptionsWithVotes(pollId);
+
+            const result = new PollOptionsResults(poll, options);
+
+            return res.status(200).json(new OperationResponseResult(result));
+        }
+        else {
+            return res.status(400).json(new OperationResponse(false, "pollId Invalido"));
+        }
+
+    } catch (error) {
+        return res.status(500).json(new OperationResponse(false, error));
+    }
 }
 
 export const createPoll = async (req: Request, res: Response): Promise<Response> => {
+    try {
 
-    const request = new CreatePollRequest();
-    request.answer1 = req.body.answer1;
-    request.answer2 = req.body.answer2;
-    request.answer3 = req.body.answer3;
-    request.answer4 = req.body.answer4;
-    request.question = req.body.question;
-    request.eventId = req.body.eventId;
+        const request = new CreatePollRequest(req.body.question, req.body.answers, req.body.eventId);
+        if (!request.eventId) {
+            return res.status(400).json(new OperationResponse(false, "eventId Invalido"));
+        }
 
-    const options: Option[] = []
+        if (!request.question) {
+            return res.status(400).json(new OperationResponse(false, "question Invalido"));
+        }
 
-    const poll = new Poll();
-    poll.eventId = request.eventId;
-    poll.question = request.question;
-    poll.pollId = uuidv4();
+        if (!request.answers || request.answers.length < 4) {
+            return res.status(400).json(new OperationResponse(false, "answers Invalido"));
+        }
 
-    if (request.answer1 && request.answer1.length > 0) {
-        const option = new Option()
-        option.text = request.answer1;
-        option.optionId = uuidv4();
-        option.pollId = poll.pollId;
-        options.push(option);
+        for (const answer of request.answers) {
+            if (!answer) {
+                return res.status(400).json(new OperationResponse(false, "answers Invalido"));
+            }
+        }
+
+        const options: Option[] = []
+
+        const poll = new Poll();
+        poll.eventId = request.eventId;
+        poll.question = request.question;
+        poll.pollId = uuidv4();
+
+        for (const answer of request.answers) {
+            const option = new Option()
+            option.text = answer;
+            option.optionId = uuidv4();
+            option.pollId = poll.pollId;
+            options.push(option);
+        }
+
+        await pollService.createPoll(poll);
+
+        for (const option of options) {
+            await optionService.createOption(option);
+        }
+
+        return res.status(200).json(new OperationResponseResult({ poll: poll, options: options }));
+
+    } catch (error) {
+        return res.status(500).json(new OperationResponse(false, error));
     }
-
-    if (request.answer2 && request.answer2.length > 0) {
-        const option = new Option()
-        option.text = request.answer2;
-        option.optionId = uuidv4();
-        option.pollId = poll.pollId;
-        options.push(option);
-    }
-
-    if (request.answer3 && request.answer3.length > 0) {
-        const option = new Option()
-        option.text = request.answer3;
-        option.optionId = uuidv4();
-        option.pollId = poll.pollId;
-        options.push(option);
-    }
-
-    if (request.answer4 && request.answer4.length > 0) {
-        const option = new Option()
-        option.text = request.answer4;
-        option.optionId = uuidv4();
-        option.pollId = poll.pollId;
-        options.push(option);
-    }
-    await pool.query(`INSERT INTO \"public\".\"Polls\" ("PollId", "Question", "EventId") VALUES ($1, $2, $3);`, [poll.pollId, poll.question, poll.eventId])
-
-    for (const option of options) {
-        await pool.query(`INSERT INTO \"public\".\"Options\" ("OptionId", "Text", "PollId") VALUES ($1,$2,$3);`, [option.optionId, option.text, option.pollId])
-    }
-
-
-    return res.status(200).json({ poll: poll, options: options })
 }
 
 export const vote = async (req: Request, res: Response): Promise<Response> => {
-    await pool.query(`INSERT INTO \"public\".\"Answers\" (\"OptionId\") VALUES ('${req.params.optionId}')`)
-    return res.status(200).json();
+    try {
+
+        const optionId = req.params.optionId;
+
+        if (!optionId) {
+            return res.status(400).json(new OperationResponse(false, 'optionId Invalido'));
+        }
+
+        await answerService.createAnswer(optionId);
+        return res.status(200).json(new OperationResponse(true, ''));
+
+    } catch (error) {
+        return res.status(500).json(new OperationResponse(false, error));
+    }
+
 }
 
 export const deletePoll = async (req: Request, res: Response): Promise<Response> => {
+    try {
 
-    await pool.query(`DELETE FROM \"public\".\"Options\" WHERE \"PollId\" = '${req.params.id}'`);
-    await pool.query(`DELETE FROM \"public\".\"Polls\" WHERE \"PollId\" = '${req.params.id}'`);
-    return res.status(200).json();
+        const pollId = req.params.id;
+        if (!pollId) {
+            return res.status(400).json(new OperationResponse(false, 'id Invalido'));
+        }
+
+        const poll = await pollService.getById(pollId);
+
+        if (!poll) {
+            return res.status(400).json(new OperationResponse(false, "pollId Invalido"));
+        }
+
+        await optionService.deleteOptionByPoll(pollId);
+        await pollService.deletePoll(pollId);
+
+        return res.status(200).json(new OperationResponse(true, ''));
+
+    } catch (error) {
+        return res.status(500).json(new OperationResponse(false, error));
+    }
+}
+
+export const deleteAllPolls = async (req: Request, res: Response): Promise<Response> => {
+
+    try {
+
+        await answerService.deleteAll();
+        await optionService.deleteAll();
+        await pollService.deleteAll();
+
+        return res.status(200).json(new OperationResponse(true, ''));
+
+    } catch (error) {
+        return res.status(500).json(new OperationResponse(false, error));
+    }
 }
