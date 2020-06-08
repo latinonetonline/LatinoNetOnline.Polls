@@ -9,94 +9,155 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deletePoll = exports.vote = exports.createPoll = exports.getResult = exports.getByEvent = exports.getPollById = exports.getPolls = void 0;
-const database_1 = require("../database");
+exports.deleteAllPolls = exports.deletePoll = exports.vote = exports.createPoll = exports.getResult = exports.getByEvent = exports.getPollById = exports.getPolls = void 0;
 const Poll_1 = require("../models/Poll");
 const CreatePollRequest_1 = require("../models/CreatePollRequest");
 const PollOptionsResults_1 = require("../models/PollOptionsResults");
 const Option_1 = require("../models/Option");
 const uuid_1 = require("uuid");
+const polls_service_1 = require("../services/polls.service");
+const options_service_1 = require("../services/options.service");
+const answers_service_1 = require("../services/answers.service");
+const OperationResponse_1 = require("../models/OperationResponse");
+const OperationResponseResult_1 = require("../models/OperationResponseResult");
+const pollService = new polls_service_1.PollService();
+const optionService = new options_service_1.OptionService();
+const answerService = new answers_service_1.AnswerService();
 exports.getPolls = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const response = yield database_1.pool.query("SELECT * FROM \"public\".\"Polls\"");
-    return res.status(200).json(response.rows);
+    try {
+        const polls = yield pollService.getAll();
+        return res.status(200).json(new OperationResponseResult_1.OperationResponseResult(polls));
+    }
+    catch (error) {
+        return res.status(500).json(new OperationResponse_1.OperationResponse(false, error));
+    }
 });
 exports.getPollById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const response = yield database_1.pool.query(`SELECT * FROM \"public\".\"Polls\" WHERE \"PollId\" = '${req.params.id}'`);
-    if (response.rows.length) {
-        return res.status(200).json(response.rows);
+    try {
+        const id = req.params.id;
+        if (!id) {
+            return res.status(400).json(new OperationResponse_1.OperationResponse(false, "Id Invalido"));
+        }
+        const poll = yield pollService.getById(id);
+        if (poll) {
+            return res.status(200).json(new OperationResponseResult_1.OperationResponseResult(poll));
+        }
+        else {
+            return res.status(404).json(new OperationResponse_1.OperationResponse(false, "No existe un Poll con ese Id"));
+        }
     }
-    else {
-        return res.status(404).json();
+    catch (error) {
+        return res.status(500).json(new OperationResponse_1.OperationResponse(false, error));
     }
 });
 exports.getByEvent = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const response = yield database_1.pool.query(`SELECT * FROM \"public\".\"Polls\" WHERE \"EventId\" = '${req.params.eventId}'`);
-    return res.status(200).json(response.rows);
+    try {
+        const eventId = req.params.eventId;
+        const polls = yield pollService.getByEventId(eventId);
+        return res.status(200).json(new OperationResponseResult_1.OperationResponseResult(polls));
+    }
+    catch (error) {
+        return res.status(500).json(new OperationResponse_1.OperationResponse(false, error));
+    }
 });
 exports.getResult = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const pollId = req.params.id;
-    const responsePoll = yield database_1.pool.query(`SELECT * FROM \"public\".\"Polls\" WHERE \"PollId\" = '${pollId}'`);
-    const responseAnswer = yield database_1.pool.query(`SELECT \"public\".\"Options\".*, (select  Count(*) from \"public\".\"Answers\" WHERE \"public\".\"Options\".\"OptionId\" = \"public\".\"Answers\".\"OptionId\") AS Votes
-    FROM \"public\".\"Options\" 
-    WHERE \"public\".\"Options\".\"PollId\" = '${pollId}';`);
-    const result = new PollOptionsResults_1.PollOptionsResults();
-    result.options = responseAnswer.rows;
-    result.poll = responsePoll.rows[0];
-    return res.status(200).json(result);
+    try {
+        const pollId = req.params.id;
+        if (!pollId) {
+            return res.status(400).json(new OperationResponse_1.OperationResponse(false, "pollId Invalido"));
+        }
+        const poll = yield pollService.getById(pollId);
+        if (poll) {
+            const options = yield optionService.getOptionsWithVotes(pollId);
+            const result = new PollOptionsResults_1.PollOptionsResults(poll, options);
+            return res.status(200).json(new OperationResponseResult_1.OperationResponseResult(result));
+        }
+        else {
+            return res.status(400).json(new OperationResponse_1.OperationResponse(false, "pollId Invalido"));
+        }
+    }
+    catch (error) {
+        return res.status(500).json(new OperationResponse_1.OperationResponse(false, error));
+    }
 });
 exports.createPoll = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const request = new CreatePollRequest_1.CreatePollRequest();
-    request.answer1 = req.body.answer1;
-    request.answer2 = req.body.answer2;
-    request.answer3 = req.body.answer3;
-    request.answer4 = req.body.answer4;
-    request.question = req.body.question;
-    request.eventId = req.body.eventId;
-    const options = [];
-    const poll = new Poll_1.Poll();
-    poll.eventId = request.eventId;
-    poll.question = request.question;
-    poll.pollId = uuid_1.v4();
-    if (request.answer1 && request.answer1.length > 0) {
-        const option = new Option_1.Option();
-        option.text = request.answer1;
-        option.optionId = uuid_1.v4();
-        option.pollId = poll.pollId;
-        options.push(option);
+    try {
+        const request = new CreatePollRequest_1.CreatePollRequest(req.body.question, req.body.answers, req.body.eventId);
+        if (!request.eventId) {
+            return res.status(400).json(new OperationResponse_1.OperationResponse(false, "eventId Invalido"));
+        }
+        if (!request.question) {
+            return res.status(400).json(new OperationResponse_1.OperationResponse(false, "question Invalido"));
+        }
+        if (!request.answers || request.answers.length < 4) {
+            return res.status(400).json(new OperationResponse_1.OperationResponse(false, "answers Invalido"));
+        }
+        for (const answer of request.answers) {
+            if (!answer) {
+                return res.status(400).json(new OperationResponse_1.OperationResponse(false, "answers Invalido"));
+            }
+        }
+        const options = [];
+        const poll = new Poll_1.Poll();
+        poll.eventId = request.eventId;
+        poll.question = request.question;
+        poll.pollId = uuid_1.v4();
+        for (const answer of request.answers) {
+            const option = new Option_1.Option();
+            option.text = answer;
+            option.optionId = uuid_1.v4();
+            option.pollId = poll.pollId;
+            options.push(option);
+        }
+        yield pollService.createPoll(poll);
+        for (const option of options) {
+            yield optionService.createOption(option);
+        }
+        return res.status(200).json(new OperationResponseResult_1.OperationResponseResult({ poll: poll, options: options }));
     }
-    if (request.answer2 && request.answer2.length > 0) {
-        const option = new Option_1.Option();
-        option.text = request.answer2;
-        option.optionId = uuid_1.v4();
-        option.pollId = poll.pollId;
-        options.push(option);
+    catch (error) {
+        return res.status(500).json(new OperationResponse_1.OperationResponse(false, error));
     }
-    if (request.answer3 && request.answer3.length > 0) {
-        const option = new Option_1.Option();
-        option.text = request.answer3;
-        option.optionId = uuid_1.v4();
-        option.pollId = poll.pollId;
-        options.push(option);
-    }
-    if (request.answer4 && request.answer4.length > 0) {
-        const option = new Option_1.Option();
-        option.text = request.answer4;
-        option.optionId = uuid_1.v4();
-        option.pollId = poll.pollId;
-        options.push(option);
-    }
-    yield database_1.pool.query(`INSERT INTO \"public\".\"Polls\" ("PollId", "Question", "EventId") VALUES ($1, $2, $3);`, [poll.pollId, poll.question, poll.eventId]);
-    for (const option of options) {
-        yield database_1.pool.query(`INSERT INTO \"public\".\"Options\" ("OptionId", "Text", "PollId") VALUES ($1,$2,$3);`, [option.optionId, option.text, option.pollId]);
-    }
-    return res.status(200).json({ poll: poll, options: options });
 });
 exports.vote = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    yield database_1.pool.query(`INSERT INTO \"public\".\"Answers\" (\"OptionId\") VALUES ('${req.params.optionId}')`);
-    return res.status(200).json();
+    try {
+        const optionId = req.params.optionId;
+        if (!optionId) {
+            return res.status(400).json(new OperationResponse_1.OperationResponse(false, 'optionId Invalido'));
+        }
+        yield answerService.createAnswer(optionId);
+        return res.status(200).json(new OperationResponse_1.OperationResponse(true, ''));
+    }
+    catch (error) {
+        return res.status(500).json(new OperationResponse_1.OperationResponse(false, error));
+    }
 });
 exports.deletePoll = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    yield database_1.pool.query(`DELETE FROM \"public\".\"Options\" WHERE \"PollId\" = '${req.params.id}'`);
-    yield database_1.pool.query(`DELETE FROM \"public\".\"Polls\" WHERE \"PollId\" = '${req.params.id}'`);
-    return res.status(200).json();
+    try {
+        const pollId = req.params.id;
+        if (!pollId) {
+            return res.status(400).json(new OperationResponse_1.OperationResponse(false, 'id Invalido'));
+        }
+        const poll = yield pollService.getById(pollId);
+        if (!poll) {
+            return res.status(400).json(new OperationResponse_1.OperationResponse(false, "pollId Invalido"));
+        }
+        yield optionService.deleteOptionByPoll(pollId);
+        yield pollService.deletePoll(pollId);
+        return res.status(200).json(new OperationResponse_1.OperationResponse(true, ''));
+    }
+    catch (error) {
+        return res.status(500).json(new OperationResponse_1.OperationResponse(false, error));
+    }
+});
+exports.deleteAllPolls = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        yield answerService.deleteAll();
+        yield optionService.deleteAll();
+        yield pollService.deleteAll();
+        return res.status(200).json(new OperationResponse_1.OperationResponse(true, ''));
+    }
+    catch (error) {
+        return res.status(500).json(new OperationResponse_1.OperationResponse(false, error));
+    }
 });

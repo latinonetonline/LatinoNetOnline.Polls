@@ -1,8 +1,10 @@
 export class CreatePollRequest {
-    question: string | undefined;
-    answer1: string | undefined;
-    answer2: string | undefined;
-    answer3: string | undefined;
-    answer4: string | undefined;
-    eventId: string | undefined;
+    constructor(question: string, answers: string[], eventId: string) {
+        this.question = question;
+        this.answers = answers;
+        this.eventId = eventId;
+    }
+    question: string;
+    answers: string[];
+    eventId: string;
 }

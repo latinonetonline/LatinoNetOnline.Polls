@@ -2,6 +2,11 @@ import { Poll } from "./Poll";
 import { OptionVotes } from "./OptionVotes";
 
 export class PollOptionsResults {
-    poll: Poll | undefined;
-    options: OptionVotes[] | undefined;
+    constructor(poll: Poll, options: OptionVotes[]) {
+        this.poll = poll;
+        this.options = options;
+    }
+
+    poll: Poll;
+    options: OptionVotes[];
 }

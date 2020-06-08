@@ -21,17 +21,11 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AUTH0_AUDIENCE = exports.AUTH0_ISSUER = exports.PG_PORT = exports.PG_DATABASE = exports.PG_PASSWORD = exports.PG_USER = exports.PG_HOST = void 0;
 const dotenv = __importStar(require("dotenv"));
-dotenv.config();
 let path;
 switch (process.env.NODE_ENV) {
-    case "test":
-        path = `${__dirname}/../../.env.test`;
-        break;
-    case "production":
-        path = `${__dirname}/../../.env.production`;
-        break;
-    default:
+    case "development":
         path = `${__dirname}/../../.env.development`;
+        break;
 }
 dotenv.config({ path: path });
 exports.PG_HOST = process.env.PG_HOST;
