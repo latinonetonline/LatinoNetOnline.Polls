@@ -47,18 +47,6 @@ export const getPollById = async (req: Request, res: Response): Promise<Response
     }
 }
 
-export const getByEvent = async (req: Request, res: Response): Promise<Response<Poll[]>> => {
-    try {
-
-        const eventId: string = req.params.eventId;
-        const polls = await pollService.getByEventId(eventId);
-        return res.status(200).json(new OperationResponseResult(polls));
-
-    } catch (error) {
-        return res.status(500).json(new OperationResponse(false, error));
-    }
-}
-
 export const getResult = async (req: Request, res: Response): Promise<Response> => {
     try {
 
@@ -88,10 +76,7 @@ export const getResult = async (req: Request, res: Response): Promise<Response> 
 export const createPoll = async (req: Request, res: Response): Promise<Response> => {
     try {
 
-        const request = new CreatePollRequest(req.body.question, req.body.answers, req.body.eventId);
-        if (!request.eventId) {
-            return res.status(400).json(new OperationResponse(false, "eventId Invalido"));
-        }
+        const request = new CreatePollRequest(req.body.question, req.body.answers);
 
         if (!request.question) {
             return res.status(400).json(new OperationResponse(false, "question Invalido"));
@@ -110,7 +95,6 @@ export const createPoll = async (req: Request, res: Response): Promise<Response>
         const options: Option[] = []
 
         const poll = new Poll();
-        poll.eventId = request.eventId;
         poll.question = request.question;
         poll.pollId = uuidv4();
 

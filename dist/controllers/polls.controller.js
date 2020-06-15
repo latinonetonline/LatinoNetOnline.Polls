@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteAllPolls = exports.deletePoll = exports.vote = exports.createPoll = exports.getResult = exports.getByEvent = exports.getPollById = exports.getPolls = void 0;
+exports.deleteAllPolls = exports.deletePoll = exports.vote = exports.createPoll = exports.getResult = exports.getPollById = exports.getPolls = void 0;
 const Poll_1 = require("../models/Poll");
 const CreatePollRequest_1 = require("../models/CreatePollRequest");
 const PollOptionsResults_1 = require("../models/PollOptionsResults");
@@ -50,16 +50,6 @@ exports.getPollById = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         return res.status(500).json(new OperationResponse_1.OperationResponse(false, error));
     }
 });
-exports.getByEvent = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const eventId = req.params.eventId;
-        const polls = yield pollService.getByEventId(eventId);
-        return res.status(200).json(new OperationResponseResult_1.OperationResponseResult(polls));
-    }
-    catch (error) {
-        return res.status(500).json(new OperationResponse_1.OperationResponse(false, error));
-    }
-});
 exports.getResult = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const pollId = req.params.id;
@@ -82,10 +72,7 @@ exports.getResult = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
 });
 exports.createPoll = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const request = new CreatePollRequest_1.CreatePollRequest(req.body.question, req.body.answers, req.body.eventId);
-        if (!request.eventId) {
-            return res.status(400).json(new OperationResponse_1.OperationResponse(false, "eventId Invalido"));
-        }
+        const request = new CreatePollRequest_1.CreatePollRequest(req.body.question, req.body.answers);
         if (!request.question) {
             return res.status(400).json(new OperationResponse_1.OperationResponse(false, "question Invalido"));
         }
@@ -99,7 +86,6 @@ exports.createPoll = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         }
         const options = [];
         const poll = new Poll_1.Poll();
-        poll.eventId = request.eventId;
         poll.question = request.question;
         poll.pollId = uuid_1.v4();
         for (const answer of request.answers) {

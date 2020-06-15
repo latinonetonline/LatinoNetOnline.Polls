@@ -5,8 +5,7 @@ exports.shorthands = undefined;
 exports.up = pgm => {
     pgm.createTable('Polls', {
         PollId: { type: 'uuid', notNull: true },
-        Question: { type: 'varchar(1000)', notNull: true },
-        EventId: { type: 'uuid', notNull: true },
+        Question: { type: 'varchar(1000)', notNull: true }
     });
 
     pgm.createTable('Options', {
