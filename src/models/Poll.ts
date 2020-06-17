@@ -1,4 +1,9 @@
 export class Poll {
-    pollId: string | undefined;
-    question: string | undefined;
+    [x: string]: any;
+    constructor() {
+        this.pollId = '';
+        this.question = '';
+    }
+    pollId: string;
+    question: string;
 }

@@ -1,3 +1,9 @@
+import { Option } from "./Option";
+
 export class OptionVotes extends Option {
-    votes: number | undefined;
+    constructor() {
+        super()
+        this.votes = 0;
+    }
+    votes: number;
 }

@@ -10,11 +10,15 @@ export class OptionService {
             FROM \"public\".\"Options\" 
             WHERE \"public\".\"Options\".\"PollId\" = '${pollId}';`);
 
-        return result.rows;
+        return result.rows.map(x => {
+            const option = x;
+            option.votes = parseInt(x.votes.toString())
+            return option;
+        });
     }
-    getById = async (optionId: string) => {
-        const result = await pool.query<Poll, Poll[]>(`SELECT * FROM \"public\".\"Options\" WHERE \"PollId\" = '${optionId}'`);
-        return result.rowCount === 1 ? result.rows[0] : null;
+    getByPoll = async (pollId: string) => {
+        const result = await pool.query<Option, Option[]>(`SELECT * FROM \"public\".\"Options\" WHERE \"PollId\" = '${pollId}'`);
+        return result.rows;
     }
     createOption = async (option: Option) => {
         await pool.query(`INSERT INTO \"public\".\"Options\" ("OptionId", "Text", "PollId") VALUES ($1,$2,$3);`, [option.optionId, option.text, option.pollId]);

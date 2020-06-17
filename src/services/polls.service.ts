@@ -3,11 +3,11 @@ import { Poll } from "../models/Poll";
 
 export class PollService {
     getAll = async () => {
-        const result = await pool.query<Poll, Poll[]>("SELECT * FROM \"public\".\"Polls\"");
+        const result = await pool.query<Poll, Poll[]>("SELECT \"public\".\"Polls\".\"PollId\" AS \"pollId\", \"public\".\"Polls\".\"Question\" AS \"question\" FROM \"public\".\"Polls\"");
         return result.rows;
     }
     getById = async (pollId: string) => {
-        const result = await pool.query<Poll, Poll[]>(`SELECT * FROM \"public\".\"Polls\" WHERE \"PollId\" = '${pollId}'`);
+        const result = await pool.query<Poll, Poll[]>(`SELECT \"public\".\"Polls\".\"PollId\" AS \"pollId\", \"public\".\"Polls\".\"Question\" AS \"question\" FROM \"public\".\"Polls\" WHERE \"PollId\" = '${pollId}'`);
         return result.rowCount === 1 ? result.rows[0] : null;
     }
 

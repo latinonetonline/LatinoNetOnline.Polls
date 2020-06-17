@@ -20,13 +20,20 @@ const options_service_1 = require("../services/options.service");
 const answers_service_1 = require("../services/answers.service");
 const OperationResponse_1 = require("../models/OperationResponse");
 const OperationResponseResult_1 = require("../models/OperationResponseResult");
+const PollOptions_1 = require("../models/PollOptions");
 const pollService = new polls_service_1.PollService();
 const optionService = new options_service_1.OptionService();
 const answerService = new answers_service_1.AnswerService();
 exports.getPolls = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        const pollOptionsArray = [];
         const polls = yield pollService.getAll();
-        return res.status(200).json(new OperationResponseResult_1.OperationResponseResult(polls));
+        for (const poll of polls) {
+            const options = yield optionService.getByPoll(poll.pollId);
+            const pollOptions = new PollOptions_1.PollOptions(poll, options);
+            pollOptionsArray.push(pollOptions);
+        }
+        return res.status(200).json(new OperationResponseResult_1.OperationResponseResult(pollOptionsArray));
     }
     catch (error) {
         return res.status(500).json(new OperationResponse_1.OperationResponse(false, error));
@@ -39,8 +46,13 @@ exports.getPollById = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             return res.status(400).json(new OperationResponse_1.OperationResponse(false, "Id Invalido"));
         }
         const poll = yield pollService.getById(id);
+        if (poll == null) {
+            return res.status(400).json(new OperationResponse_1.OperationResponse(false, "Poll Dont Exist"));
+        }
+        const options = yield optionService.getByPoll(id);
+        const pollOptions = new PollOptions_1.PollOptions(poll, options);
         if (poll) {
-            return res.status(200).json(new OperationResponseResult_1.OperationResponseResult(poll));
+            return res.status(200).json(new OperationResponseResult_1.OperationResponseResult(pollOptions));
         }
         else {
             return res.status(404).json(new OperationResponse_1.OperationResponse(false, "No existe un Poll con ese Id"));

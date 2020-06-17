@@ -9,6 +9,7 @@ import { OptionService } from '../services/options.service';
 import { AnswerService } from "../services/answers.service";
 import { OperationResponse } from "../models/OperationResponse";
 import { OperationResponseResult } from "../models/OperationResponseResult";
+import { PollOptions } from "../models/PollOptions";
 
 const pollService = new PollService();
 const optionService = new OptionService();
@@ -16,9 +17,18 @@ const answerService = new AnswerService();
 
 export const getPolls = async (req: Request, res: Response): Promise<Response<Poll[]>> => {
     try {
-
+        const pollOptionsArray: PollOptions[] = []
         const polls = await pollService.getAll();
-        return res.status(200).json(new OperationResponseResult(polls));
+        for (const poll of polls) {
+
+            const options = await optionService.getByPoll(poll.pollId);
+
+            const pollOptions = new PollOptions(poll, options);
+
+            pollOptionsArray.push(pollOptions);
+        }
+
+        return res.status(200).json(new OperationResponseResult(pollOptionsArray));
 
     } catch (error) {
         return res.status(500).json(new OperationResponse(false, error));
@@ -33,10 +43,17 @@ export const getPollById = async (req: Request, res: Response): Promise<Response
         if (!id) {
             return res.status(400).json(new OperationResponse(false, "Id Invalido"));
         }
-
         const poll = await pollService.getById(id);
+
+        if (poll == null) {
+            return res.status(400).json(new OperationResponse(false, "Poll Dont Exist"));
+        }
+
+        const options = await optionService.getByPoll(id);
+        const pollOptions = new PollOptions(poll, options);
+
         if (poll) {
-            return res.status(200).json(new OperationResponseResult(poll));
+            return res.status(200).json(new OperationResponseResult(pollOptions));
         }
         else {
             return res.status(404).json(new OperationResponse(false, "No existe un Poll con ese Id"));
